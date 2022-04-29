@@ -94,20 +94,25 @@ void MD5Update (MD5_CTX *context, unsigned char *input, unsigned int inputLen)
   unsigned int i, index, partLen;
   //计算[已处理数据长度(byte) mod 64]
   index = (unsigned int)((context->count[0] >> 3) & 0x3F);
-  //bit计数器累加
-  if ((context->count[0] += ((unsigned int)inputLen << 3))
-   < ((unsigned int)inputLen << 3)) //处理加法进位溢出的情况
+  //bit计数器累加,计算要处理的字符串的字节数，保存到count[0]中国
+  if ((context->count[0] += ((unsigned int)inputLen << 3))< ((unsigned int)inputLen << 3)) //处理加法进位溢出的情况
+  {
     context->count[1]++;
-    context->count[1] += ((unsigned int)inputLen >> 29);
+  }
+    
+  context->count[1] += ((unsigned int)inputLen >> 29);
   //计算缓冲区还有多少字节空间
+  printf("%0.2x\n",context->count[0]);
   printf("partLen:%d,inputLen:%d\n\n",64-index,inputLen);
-partLen = 64 - index;
+  partLen = 64 - index;
 
   //以512位数据为一组进行处理
+  // 开始分组转换了
   if (inputLen >= partLen) {
 	  memcpy(&context->buffer[index],input, partLen);
 	  MD5Transform (context->state, context->buffer);
 	  for (i = partLen; i + 63 < inputLen; i += 64)
+        printf("第%d 组循环转换\n",i);
 	      MD5Transform (context->state, &input[i]);
 	  index = 0;
   }
@@ -122,13 +127,18 @@ void MD5Final (unsigned char digest[16], MD5_CTX *context)
   unsigned char bits[8];
   unsigned int index, padLen;
   //记录数据长度
+  printf("%0.2x\n",context->count[0]);
+
   Encode (bits, context->count, 8);
+  // printf("bits  %s\n",bits);
   //填充数据
   index = (unsigned int)((context->count[0] >> 3) & 0x3f);
   printf("MD5Final index:%d\n",index);
+  // 如果长度小于448,就好触发56-index,120=64+56
+  // padLen 是要填充的长度(以字节为单位)
   padLen = (index < 56) ? (56 - index) : (120 - index);
-  printf("padLen:%d\n",padLen);
-//   printf("%c\n",context);
+  printf("要填充的字节长度为:%d\n",padLen);
+  // 开始填充数据了，PADDING采用的是十六进制,所以bits
   MD5Update (context, PADDING, padLen);
   //追加数据长度信息
   MD5Update (context, bits, 8);
@@ -212,7 +222,7 @@ void MD5Transform (unsigned int state[4], unsigned char block[64])
   II (d, a, b, c, x[11], S42, 0xbd3af235); /* 62 */
   II (c, d, a, b, x[ 2], S43, 0x2ad7d2bb); /* 63 */
   II (b, c, d, a, x[ 9], S44, 0xeb86d391); /* 64 */
-
+  printf("a:%0.2x\n",a);
   state[0] += a;
   state[1] += b;
   state[2] += c;
@@ -245,7 +255,7 @@ void Decode (unsigned int *output, unsigned char *input, unsigned int len)
 int main()
 {
 	MD5_CTX md5_calc;
-	char c[]="abc";
+	char c[]="r0ysue";
 	unsigned char md5[16];
 	//演示计算字符串abc的MD5码
 	MD5Init(&md5_calc);
