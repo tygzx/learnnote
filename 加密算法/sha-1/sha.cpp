@@ -393,11 +393,14 @@ static void zen_sha1_init(sha1_ctx *ctx)
     ctx->unprocessed_ = 0;
     // 初始化算法的几个常量，魔术数
     ctx->hash_[0] = 0x67452301;
-    ctx->hash_[1] = 0xefcdab89;
-    ctx->hash_[2] = 0x98badcfe;
+    ctx->hash_[1] = 0xEFCDAB89;
+    ctx->hash_[2] = 0x98BADCFE;
     ctx->hash_[3] = 0x10325476;
     // 多了一个盐值相对于md5
     ctx->hash_[4] = 0xc3d2e1f0;
+
+    // ctx->hash_[3] = 0x5E4A1F7C;
+    // ctx->hash_[4] = 0x10325476;
 }
 
 
@@ -423,7 +426,10 @@ static void zen_sha1_process_block(uint32_t hash[5],
     //处理,先将16个数组扩展到80个数组
     for (t = 16; t < 80; t++)
     {
+        // sha-1
         wblock[t] = ROTL32(wblock[t - 3] ^ wblock[t - 8] ^ wblock[t - 14] ^ wblock[t - 16], 1);
+        // sha=0
+        // wblock[t] = wblock[t - 3] ^ wblock[t - 8] ^ wblock[t - 14] ^ wblock[t - 16];
     }
 
     a = hash[0];
@@ -435,14 +441,21 @@ static void zen_sha1_process_block(uint32_t hash[5],
     for (t = 0; t < 20; t++)
     {
         /* the following is faster than ((B & C) | ((~B) & D)) */
-        temp =  ROTL32(a, 5) + (((c ^ d) & b) ^ d)
+        temp = ROTL32(a, 5) + (((c ^ d) & b) ^ d)
                 + e + wblock[t] + 0x5A827999;
-        printf("temp: %0.2x\n",temp);
         e = d;
         d = c;
         c = ROTL32(b, 30);
         b = a;
         a = temp;
+        printf("%d\n",t);
+        printf("0x%0.2x\n",wblock[t]);
+        printf("temp:a: 0x%0.2x\n",a);
+        printf("temp:b: 0x%0.2x\n",b);
+        printf("temp:c: 0x%0.2x\n",c);
+        printf("temp:d: 0x%0.2x\n",d);
+        printf("temp:e: 0x%0.2x\n",e);
+
     }
 
     for (t = 20; t < 40; t++)
@@ -475,7 +488,6 @@ static void zen_sha1_process_block(uint32_t hash[5],
         b = a;
         a = temp;
     }
-
     hash[0] += a;
     hash[1] += b;
     hash[2] += c;
@@ -594,13 +606,13 @@ unsigned char *ZEN_LIB::sha1(const unsigned char *msg,
     return result;
 }
 
-int main(int /*argc*/, char * /*argv*/[])
+int main(int argc, char * argv[])
 {
 
     int ret = 0;
     static unsigned char test_buf[7][81] =
     {
-        { "" },
+        { "r0ysue"},
         { "a" },
         { "abc" },
         { "message digest" },
@@ -611,7 +623,7 @@ int main(int /*argc*/, char * /*argv*/[])
 
     static const size_t test_buflen[7] =
     {
-        0, 1, 3, 14, 26, 62, 80
+        6, 1, 3, 14, 26, 62, 80
     };
 
     static const unsigned char md5_test_sum[7][16] =
@@ -626,15 +638,15 @@ int main(int /*argc*/, char * /*argv*/[])
     };
     unsigned char result[32] ={0};
 
-    for(size_t i=0;i<7;++i)
-    {
-        ZEN_LIB::md5(test_buf[i],test_buflen[i],result);
-        ret = memcmp(result,md5_test_sum[i],16);
-        if (ret != 0)
-        {
-            assert(false);
-        }
-    }
+    // for(size_t i=0;i<7;++i)
+    // {
+    //     ZEN_LIB::md5(test_buf[i],test_buflen[i],result);
+    //     ret = memcmp(result,md5_test_sum[i],16);
+    //     if (ret != 0)
+    //     {
+    //         assert(false);
+    //     }
+    // }
 
     static const unsigned char sha1_test_sum[7][20] =
     {
@@ -648,6 +660,7 @@ int main(int /*argc*/, char * /*argv*/[])
     };
     for(size_t i=0;i<7;++i)
     {
+         printf("start\n");
         ZEN_LIB::sha1(test_buf[i],test_buflen[i],result);
         for(int i=0;i<20;i++){
             printf("%0.2x",result[i]);
